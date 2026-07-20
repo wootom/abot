@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# One-time WSL setup for abot: install node (nvm), ttyd, tmux; generate auth +
-# session secret; write a starter host roster. Idempotent — safe to re-run.
+# One-time macOS setup for abot: install ttyd, tmux, node (Homebrew); generate
+# auth + session secret; write a starter host roster. Idempotent — safe to re-run.
+# Unlike Windows there is no WSL — the stack runs natively.
 #
-# Env (optional, usually passed by windows/install.ps1):
+# Env (optional, usually passed by macos/install.sh):
 #   ABOT_HOST_ALIAS   short name for this host        (default: host1)
 #   ABOT_SELF_URL     this host's tailnet URL          (for hosts.json + fallback)
 #   ABOT_SELF_PUBLIC_URL  this host's public Funnel URL (optional)
@@ -11,54 +12,28 @@ set -euo pipefail
 
 ALIAS="${ABOT_HOST_ALIAS:-host1}"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-LOCAL_BIN="$HOME/.local/bin"
-mkdir -p "$LOCAL_BIN" "$HOME/.abot"
+mkdir -p "$HOME/.abot"
 
 log() { printf '\n=== %s ===\n' "$1"; }
 
-log "apt packages (tmux, curl, git)"
-if command -v apt-get >/dev/null 2>&1; then
-  sudo apt-get update -y
-  sudo apt-get install -y tmux curl git ca-certificates
+log "Homebrew packages (ttyd, tmux)"
+if ! command -v brew >/dev/null 2>&1; then
+  echo "Homebrew not found. Install from https://brew.sh then re-run." >&2
+  exit 1
 fi
+for pkg in ttyd tmux; do
+  if ! command -v "$pkg" >/dev/null 2>&1; then brew install "$pkg"; fi
+done
 
-log "node via nvm"
-export NVM_DIR="$HOME/.nvm"
-if [ ! -s "$NVM_DIR/nvm.sh" ]; then
-  curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
-fi
-# shellcheck disable=SC1091
-. "$NVM_DIR/nvm.sh"
+log "node"
 if ! command -v node >/dev/null 2>&1; then
-  nvm install --lts
+  # prefer nvm if present, else brew
+  export NVM_DIR="$HOME/.nvm"
+  # shellcheck disable=SC1091
+  [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" >/dev/null 2>&1 || true
+  if ! command -v node >/dev/null 2>&1; then brew install node; fi
 fi
 node --version
-
-log "ttyd static binary"
-if [ ! -x "$LOCAL_BIN/ttyd" ]; then
-  arch="$(uname -m)"
-  case "$arch" in
-    x86_64|amd64) asset="ttyd.x86_64" ;;
-    aarch64|arm64) asset="ttyd.aarch64" ;;
-    armv7l) asset="ttyd.armhf" ;;
-    *) echo "unsupported arch for ttyd prebuilt: $arch (install ttyd manually)"; asset="" ;;
-  esac
-  if [ -n "$asset" ]; then
-    curl -fsSL -o "$LOCAL_BIN/ttyd" \
-      "https://github.com/tsl0922/ttyd/releases/download/1.7.7/$asset"
-    chmod +x "$LOCAL_BIN/ttyd"
-  fi
-fi
-"$LOCAL_BIN/ttyd" --version || true
-
-log "PATH boost in ~/.bashrc (idempotent)"
-if ! grep -q 'abot: ~/.local/bin' "$HOME/.bashrc" 2>/dev/null; then
-  {
-    echo ''
-    echo '# abot: ~/.local/bin (ttyd) on PATH'
-    echo 'case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) export PATH="$HOME/.local/bin:$PATH" ;; esac'
-  } >> "$HOME/.bashrc"
-fi
 
 log "auth credentials (~/.abot-auth)"
 AUTH_FILE="$HOME/.abot-auth"
@@ -90,4 +65,4 @@ else
 fi
 
 echo
-echo "setup-wsl.sh done. Start abot with: bash $ROOT/scripts/abot-web-start-wsl.sh"
+echo "setup-mac.sh done. Start abot with: bash $ROOT/scripts/abot-web-start-mac.sh"

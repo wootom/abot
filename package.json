@@ -1,0 +1,10 @@
+{
+  "name": "abot",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Personal DeX web terminal gateway for tmux",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server/abot-web.js"
+  }
+}

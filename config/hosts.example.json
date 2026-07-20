@@ -1,0 +1,12 @@
+[
+  {
+    "label": "pcA",
+    "href": "https://pca.YOUR-TAILNET.ts.net:9443/",
+    "publicHref": "https://pca.YOUR-TAILNET.ts.net:8443/"
+  },
+  {
+    "label": "pcB",
+    "href": "https://pcb.YOUR-TAILNET.ts.net:9443/",
+    "publicHref": "https://pcb.YOUR-TAILNET.ts.net:8443/"
+  }
+]

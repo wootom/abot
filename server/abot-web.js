@@ -1927,12 +1927,56 @@ function renderHtml() {
       }
     });
 
+    // --- Foreground gate: no data when the tab is not in the foreground -------
+    // A backgrounded/forgotten tab keeps a ttyd WebSocket open and keeps polling,
+    // which drains mobile/tethering data even while nobody is looking. When the
+    // tab goes hidden we drop the terminal WebSocket (blank the iframe) and stop
+    // polling, then reconnect automatically when it returns to the foreground.
+    let pollTimer = null;
+    function startPolling() {
+      if (pollTimer) return;
+      refresh().catch((error) => setStatus(error.message));
+      pollTimer = setInterval(() => refresh().catch(() => {}), 6000);
+    }
+    function stopPolling() {
+      if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+    }
+
+    let bgSuspended = false;
+    let hideTimer = null;
+    function suspendForBackground() {
+      if (bgSuspended) return;
+      bgSuspended = true;
+      stopPolling();
+      terminal.src = "about:blank"; // closes the ttyd WebSocket -> zero data
+      setStatus(hostAlias + " · ⏸ 백그라운드(데이터 절약) — 복귀 시 재연결");
+    }
+    function resumeFromBackground() {
+      if (!bgSuspended) return;
+      bgSuspended = false;
+      terminal.src = "/term/?r=" + Date.now(); // reopen ttyd WebSocket
+      startPolling();
+    }
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) {
+        // brief tab switches shouldn't churn reconnects; wait a few seconds
+        if (!hideTimer) {
+          hideTimer = setTimeout(() => { hideTimer = null; suspendForBackground(); }, 3000);
+        }
+      } else {
+        if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
+        resumeFromBackground();
+      }
+    });
+    // bfcache restore on mobile: make sure we are connected again
+    window.addEventListener("pageshow", () => { if (!document.hidden) resumeFromBackground(); });
+
     renderPresetActive();
     renderHosts();
     initTouchScroll();
-    refresh().catch((error) => setStatus(error.message));
-    setInterval(() => refresh().catch(() => {}), 6000);
-  </script>
+    startPolling();
+    if (document.hidden) suspendForBackground();
+</script>
 </body>
 </html>`;
 }

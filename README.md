@@ -76,6 +76,21 @@ WSL 세팅, 로그인 생성, Tailscale 노출, **headless keepalive**(로그아
 - 자격증명은 `~/.abot-auth`(`user:pass`, chmod 600), 설치 시 생성. **여러 호스트에 같은 로그인을 쓰려면 같은 `~/.abot-auth`를 복사**.
 - `curl`/API용 Basic Auth도 지원.
 
+## 🟨 프롬프트 마커 (선택 tmux 애드온)
+
+Codex/Claude 입력창에서 **Enter로 보낼 때 문장 앞에 🟨를 자동으로** 붙여, 공유 터미널에서
+*내가 친 줄*을 한눈에 구분합니다(폰으로 볼 때 특히 유용). 승인창·슬래시 메뉴·copy-mode·다른
+프로그램의 Enter는 원래 동작을 유지하고, `F6`은 수동 대체 키입니다.
+
+설치(각 호스트에서 1회):
+```bash
+bash tmux/install-marker.sh
+```
+기존 `~/.tmux.conf`를 `~/.tmux.conf.before-marker-<날짜>`로 백업하고, 이 머신의 tmux 경로를 넣어
+마커 블록을 추가한 뒤 실행 중인 tmux 서버(모든 세션)에 즉시 반영합니다. macOS(Homebrew)와
+Linux/WSL 경로 차이는 자동 처리됩니다. 되돌리기: `~/.tmux.conf`에서 `abot 🟨 prompt marker`
+블록을 지우고 tmux를 재로드.
+
 ## 서비스 관리
 
 **macOS**
@@ -108,6 +123,7 @@ Unregister-ScheduledTask -TaskName abot-keepalive -Confirm:$false   # 제거
 | `scripts/abot-web-start-mac.sh` / `-wsl.sh` / `abot-boot-wsl.sh` / `abot-web-stop.sh` | 실행 제어 |
 | `macos/install.sh` / `com.abot.web.plist.template` / `abot-launchd.sh` | macOS 설치·LaunchAgent |
 | `windows/install.ps1` / `install-keepalive.ps1` | Windows 설치·keepalive |
+| `tmux/abot-marker.tmux.conf` / `install-marker.sh` | 🟨 프롬프트 마커 tmux 애드온 |
 | `MANUAL.md` | 사용자용 버튼 설명 |
 
 ## 보안 메모
@@ -199,6 +215,22 @@ otherwise by `publicHref`.
 - Credentials in `~/.abot-auth` (`user:pass`, chmod 600), generated on setup. To share
   one login across hosts, copy the same `~/.abot-auth` to each.
 - Basic Auth also works for `curl`/API.
+
+## 🟨 Prompt marker (optional tmux add-on)
+
+Prepends a 🟨 to the line you type in a Codex/Claude prompt when you press **Enter**,
+so your own input is easy to spot in the shared terminal view (handy when watching a
+session from your phone). Approval dialogs, slash menus, copy-mode, and every other
+program keep Enter's original behavior; `F6` is a manual fallback.
+
+Install (once per host):
+```bash
+bash tmux/install-marker.sh
+```
+It backs up `~/.tmux.conf` to `~/.tmux.conf.before-marker-<date>`, substitutes this
+machine's tmux path, appends the marker block, and reloads it into the running tmux
+server (all sessions). macOS (Homebrew) vs Linux/WSL path differences are handled
+automatically. To remove: delete the `abot 🟨 prompt marker` block and reload tmux.
 
 ## Managing the service
 
